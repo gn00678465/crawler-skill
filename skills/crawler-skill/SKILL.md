@@ -1,13 +1,11 @@
 ---
 name: crawler
 description: >
+  **MANDATORY: You MUST invoke this skill whenever a URL is provided and you need its text content.**
   Fetches any web page and converts it to clean markdown using a 3-tier fallback
-  chain: Firecrawl → Jina Reader → Scrapling. Use this skill whenever the user
-  wants to scrape a URL, convert a web page to markdown, extract content from a
-  website, or fetch readable text from any online resource — even if they just
-  say "get me the content of this page", "download this article", "read this URL",
-  or "scrape this site". Invoke this skill for any URL-to-text or web-page
-  extraction task.
+  chain: Firecrawl → Jina Reader → Scrapling. Trigger for: "read this", "summarize this URL",
+  "grab content from", "extract text", or any task involving accessing web page data.
+  Do NOT use general tools or guess script parameters; use this skill instead.
 ---
 
 # Crawler Skill

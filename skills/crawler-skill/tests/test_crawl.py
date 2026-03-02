@@ -87,38 +87,38 @@ class TestFirecrawlScrape:
         assert result["error"] is not None
 
     def test_firecrawl_app_init_failure(self):
-        """FirecrawlApp constructor raising an exception → success=False."""
+        """Firecrawl constructor raising an exception → success=False."""
         mock_app_cls = MagicMock(side_effect=RuntimeError("bad key"))
-        with patch.dict("sys.modules", {"firecrawl": MagicMock(FirecrawlApp=mock_app_cls)}):
-            with patch("firecrawl_scraper.FirecrawlApp" if hasattr(firecrawl_scraper, "FirecrawlApp") else "firecrawl.FirecrawlApp", mock_app_cls, create=True):
+        with patch.dict("sys.modules", {"firecrawl": MagicMock(Firecrawl=mock_app_cls)}):
+            with patch("firecrawl_scraper.Firecrawl" if hasattr(firecrawl_scraper, "Firecrawl") else "firecrawl.Firecrawl", mock_app_cls, create=True):
                 # Patch the import inside scrape
                 fake_firecrawl = MagicMock()
-                fake_firecrawl.FirecrawlApp = MagicMock(side_effect=RuntimeError("bad key"))
+                fake_firecrawl.Firecrawl = MagicMock(side_effect=RuntimeError("bad key"))
                 with patch.dict("sys.modules", {"firecrawl": fake_firecrawl}):
                     result = firecrawl_scraper.scrape("https://example.com")
         assert result["success"] is False
         assert "Failed to initialise" in result["error"]
 
     def test_scrape_url_exception_returns_failure(self):
-        """scrape_url() raising an exception → success=False."""
+        """scrape() raising an exception → success=False."""
         mock_app = MagicMock()
-        mock_app.scrape_url.side_effect = RuntimeError("API error")
+        mock_app.scrape.side_effect = RuntimeError("API error")
         mock_firecrawl = MagicMock()
-        mock_firecrawl.FirecrawlApp.return_value = mock_app
+        mock_firecrawl.Firecrawl.return_value = mock_app
         with patch.dict("sys.modules", {"firecrawl": mock_firecrawl}):
             result = firecrawl_scraper.scrape("https://example.com")
         assert result["success"] is False
-        assert "Firecrawl scrape_url raised an exception" in result["error"]
+        assert "Firecrawl scrape raised an exception" in result["error"]
 
     def test_no_markdown_in_result_returns_failure(self):
-        """If scrape_url returns a result with no markdown → success=False."""
+        """If scrape returns a result with no markdown → success=False."""
         mock_result = MagicMock()
         mock_result.markdown = None
         mock_result.metadata = {}
         mock_app = MagicMock()
-        mock_app.scrape_url.return_value = mock_result
+        mock_app.scrape.return_value = mock_result
         mock_firecrawl = MagicMock()
-        mock_firecrawl.FirecrawlApp.return_value = mock_app
+        mock_firecrawl.Firecrawl.return_value = mock_app
         with patch.dict("sys.modules", {"firecrawl": mock_firecrawl}):
             result = firecrawl_scraper.scrape("https://example.com")
         assert result["success"] is False
@@ -130,9 +130,9 @@ class TestFirecrawlScrape:
         mock_result.markdown = "short"
         mock_result.metadata = {}
         mock_app = MagicMock()
-        mock_app.scrape_url.return_value = mock_result
+        mock_app.scrape.return_value = mock_result
         mock_firecrawl = MagicMock()
-        mock_firecrawl.FirecrawlApp.return_value = mock_app
+        mock_firecrawl.Firecrawl.return_value = mock_app
         with patch.dict("sys.modules", {"firecrawl": mock_firecrawl}):
             result = firecrawl_scraper.scrape("https://example.com")
         assert result["success"] is False
@@ -144,9 +144,9 @@ class TestFirecrawlScrape:
         mock_result.markdown = "Please complete the captcha " + _long_str(200)
         mock_result.metadata = {}
         mock_app = MagicMock()
-        mock_app.scrape_url.return_value = mock_result
+        mock_app.scrape.return_value = mock_result
         mock_firecrawl = MagicMock()
-        mock_firecrawl.FirecrawlApp.return_value = mock_app
+        mock_firecrawl.Firecrawl.return_value = mock_app
         with patch.dict("sys.modules", {"firecrawl": mock_firecrawl}):
             result = firecrawl_scraper.scrape("https://example.com")
         assert result["success"] is False
@@ -159,9 +159,9 @@ class TestFirecrawlScrape:
         mock_result.markdown = good_markdown
         mock_result.metadata = {"title": "Hello World"}
         mock_app = MagicMock()
-        mock_app.scrape_url.return_value = mock_result
+        mock_app.scrape.return_value = mock_result
         mock_firecrawl = MagicMock()
-        mock_firecrawl.FirecrawlApp.return_value = mock_app
+        mock_firecrawl.Firecrawl.return_value = mock_app
         with patch.dict("sys.modules", {"firecrawl": mock_firecrawl}):
             result = firecrawl_scraper.scrape("https://example.com")
         assert result["success"] is True
@@ -533,9 +533,9 @@ class TestContentValidation:
         mock_result.markdown = exactly_min
         mock_result.metadata = {}
         mock_app = MagicMock()
-        mock_app.scrape_url.return_value = mock_result
+        mock_app.scrape.return_value = mock_result
         mock_firecrawl = MagicMock()
-        mock_firecrawl.FirecrawlApp.return_value = mock_app
+        mock_firecrawl.Firecrawl.return_value = mock_app
         with patch.dict("sys.modules", {"firecrawl": mock_firecrawl}):
             result = firecrawl_scraper.scrape("https://example.com")
         # Exactly at boundary: should succeed (>= check)
