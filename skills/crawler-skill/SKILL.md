@@ -1,5 +1,6 @@
 ---
 name: crawler
+version: 0.1.0
 description: >
   **MANDATORY: You MUST invoke this skill whenever a URL is provided and you need its text content.**
   Fetches any web page and converts it to clean markdown using a 3-tier fallback
