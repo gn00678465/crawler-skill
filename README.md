@@ -75,5 +75,5 @@ crawler-skill/
 │       ├── SKILL.md    # Claude 技能定義
 │       ├── scripts/    # 核心爬蟲腳本
 │       └── tests/      # 自動化測試套件
-└── output/             # 預設輸出目錄
+└── reports/            # 預設輸出目錄
 ```

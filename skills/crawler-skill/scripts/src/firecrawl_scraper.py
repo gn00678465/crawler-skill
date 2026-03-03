@@ -60,13 +60,19 @@ def scrape(url: str) -> dict[str, Any]:
 
     # Allow pointing at a self-hosted instance via FIRECRAWL_API_URL env var.
     api_url: str | None = os.getenv("FIRECRAWL_API_URL")
-    api_key: str | None = os.getenv("FIRECRAWL_API_KEY", "")
+    api_key: str | None = os.getenv("FIRECRAWL_API_KEY")
+
+    # If no API key is provided and no custom API URL is set, 
+    # default to a local Firecrawl instance (common for self-hosting).
+    if not api_key and not api_url:
+        api_url = "http://localhost:3002"
+        api_key = "" # Local instances often don't require a key or accept empty.
 
     try:
         if api_url:
-            app = Firecrawl(api_key=api_key, api_url=api_url)
+            app = Firecrawl(api_key=api_key or "", api_url=api_url)
         else:
-            app = Firecrawl(api_key=api_key)
+            app = Firecrawl(api_key=api_key or "")
     except Exception as exc:  # noqa: BLE001
         return {
             "success": False,

@@ -52,14 +52,24 @@ crawler-skill/
 # Basic fetch — tries Firecrawl, falls back to Jina, then Scrapling
 uv run scripts/crawl.py --url https://docs.python.org/3/
 
-# Redirect output to a file
-uv run scripts/crawl.py --url https://example.com > page.md
+# Redirect output to a file (ALWAYS save to the project root's reports/ directory)
+# For example, if you are in the project root:
+mkdir -p reports
+uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com > reports/page.md
 
 # With a Firecrawl API key for best results
-FIRECRAWL_API_KEY=fc-... uv run scripts/crawl.py --url https://example.com
+FIRECRAWL_API_KEY=fc-... uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com
+```
+
+## Saving Reports
+
+When the user asks to save the crawled content or a summary to a file, **ALWAYS** save the file into the `reports/` directory at the project root (`D:\Skills\crawler-skill\reports`). If the directory does not exist, create it first.
+
+Example:
+If asked to "save to result.md", you should save it to `reports/result.md` relative to the project root.
 
 # Point at a self-hosted Firecrawl instance
-FIRECRAWL_API_URL=http://localhost:3002 uv run scripts/crawl.py --url https://example.com
+FIRECRAWL_API_URL=http://localhost:3002 uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com
 ```
 
 ## Content validation
