@@ -34,7 +34,8 @@ _MIN_CONTENT_LENGTH = 100
 
 def _is_cloudflare_page(html: str) -> bool:
     """Return True if the HTML looks like a Cloudflare interstitial/challenge page."""
-    return any(marker in html for marker in _CLOUDFLARE_MARKERS)
+    html_lower = html.lower()
+    return any(marker.lower() in html_lower for marker in _CLOUDFLARE_MARKERS)
 
 
 def _html_to_markdown(html: str) -> str:

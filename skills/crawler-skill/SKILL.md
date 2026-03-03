@@ -64,12 +64,13 @@ FIRECRAWL_API_KEY=fc-... uv --directory skills/crawler-skill run scripts/crawl.p
 
 ## Saving Reports
 
-When the user asks to save the crawled content or a summary to a file, **ALWAYS** save the file into the `reports/` directory at the project root (`D:\Skills\crawler-skill\reports`). If the directory does not exist, create it first.
+When the user asks to save the crawled content or a summary to a file, **ALWAYS** save the file into the `reports/` directory at the project root (for example, `{project_root}/reports`). If the directory does not exist, create it first.
 
 Example:
 If asked to "save to result.md", you should save it to `reports/result.md` relative to the project root.
 
 # Point at a self-hosted Firecrawl instance
+```bash
 FIRECRAWL_API_URL=http://localhost:3002 uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com
 ```
 

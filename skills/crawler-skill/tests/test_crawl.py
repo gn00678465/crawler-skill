@@ -285,6 +285,12 @@ class TestScraplingHelpers:
     def test_normal_html_not_flagged(self):
         assert scrapling_scraper._is_cloudflare_page("<html><body><h1>Hello</h1></body></html>") is False
 
+    def test_cloudflare_markers_case_insensitive(self):
+        """Markers in uppercase or mixed case should still be detected."""
+        assert scrapling_scraper._is_cloudflare_page("CF-BROWSER-VERIFICATION") is True
+        assert scrapling_scraper._is_cloudflare_page("JUST A MOMENT") is True
+        assert scrapling_scraper._is_cloudflare_page("Enable JavaScript And Cookies To Continue") is True
+
     def test_html_to_markdown_converts_h1(self):
         md = scrapling_scraper._html_to_markdown("<h1>Title</h1>")
         assert "Title" in md
