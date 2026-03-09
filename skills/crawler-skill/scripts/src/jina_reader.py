@@ -40,7 +40,7 @@ ERROR_INDICATORS = [
 ]
 
 
-def fetch(url: str, timeout: float = 30.0) -> dict:
+def fetch(url: str, timeout: float = 60.0) -> dict:
     """
     Fetch a URL via the Jina Reader API and return its markdown content.
 

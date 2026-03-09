@@ -1,6 +1,6 @@
 ---
 name: crawler
-version: 0.1.0
+version: 0.2.0
 description: >
   **MANDATORY: You MUST invoke this skill whenever a URL is provided and you need its text content.**
   Fetches any web page and converts it to clean markdown using a 3-tier fallback
@@ -16,10 +16,10 @@ Converts any URL into clean markdown using a robust 3-tier fallback chain.
 ## Quick start
 
 ```bash
-uv run scripts/crawl.py --url https://example.com
+uv run scripts/crawl.py --url https://example.com --output reports/example.md
 ```
 
-Markdown goes to **stdout**. Progress/errors go to **stderr**. Exit code `0` on
+Markdown is saved to the file specified by `--output`. Progress/errors go to **stderr**. Exit code `0` on
 success, `1` if all scrapers fail.
 
 ## How it works
@@ -40,34 +40,35 @@ crawler-skill/
 ├── scripts/
 │   ├── crawl.py               ← main CLI entry point (PEP 723 inline deps)
 │   └── src/
+│       ├── domain_router.py       ← URL-to-tier routing rules
 │       ├── firecrawl_scraper.py   ← Tier 1: Firecrawl API
 │       ├── jina_reader.py         ← Tier 2: Jina r.jina.ai proxy
 │       └── scrapling_scraper.py   ← Tier 3: local headless scraper
 └── tests/
-    └── test_crawl.py          ← 51 pytest tests (all passing)
+    └── test_crawl.py          ← 70 pytest tests (all passing)
 ```
 
 ## Usage examples
 
 ```bash
 # Basic fetch — tries Firecrawl, falls back to Jina, then Scrapling
-uv run scripts/crawl.py --url https://docs.python.org/3/
+# Always prefer using --output to avoid terminal encoding issues
+uv run scripts/crawl.py --url https://docs.python.org/3/ --output reports/python_docs.md
 
-# Redirect output to a file (ALWAYS save to the project root's reports/ directory)
-# For example, if you are in the project root:
-mkdir -p reports
-uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com > reports/page.md
+# If no --output is provided, markdown goes to stdout (not recommended on Windows)
+uv run scripts/crawl.py --url https://example.com
 
 # With a Firecrawl API key for best results
-FIRECRAWL_API_KEY=fc-... uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com
+FIRECRAWL_API_KEY=fc-... uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com --output reports/example.md
 ```
 
 ## Saving Reports
 
-When the user asks to save the crawled content or a summary to a file, **ALWAYS** save the file into the `reports/` directory at the project root (for example, `{project_root}/reports`). If the directory does not exist, create it first.
+When the user asks to save the crawled content or a summary to a file, **ALWAYS** use the `--output` argument and save the file into the `reports/` directory at the project root (for example, `{project_root}/reports`). If the directory does not exist, the script will create it.
 
 Example:
-If asked to "save to result.md", you should save it to `reports/result.md` relative to the project root.
+If asked to "save to result.md", you should run:
+`uv run scripts/crawl.py --url <URL> --output reports/result.md`
 
 # Point at a self-hosted Firecrawl instance
 ```bash
@@ -82,13 +83,28 @@ Each scraper validates its output before returning success:
 - Detection of Cloudflare interstitial pages (Scrapling — escalates to StealthyFetcher)
 - Detection of Jina error page indicators (`Error:`, `Access Denied`, etc.)
 
+## Domain routing
+
+Certain hostnames bypass one or more scraper tiers to avoid known compatibility
+issues.  The logic lives in `scripts/src/domain_router.py`.
+
+| Domain | Skipped tiers | Active chain |
+|--------|--------------|--------------|
+| `medium.com` (and subdomains) | firecrawl | jina → scrapling |
+| `mp.weixin.qq.com` | firecrawl + jina | scrapling only |
+| everything else | — | firecrawl → jina → scrapling |
+
+Sub-domain matching follows a suffix rule: `blog.medium.com` matches the
+`medium.com` rule because its hostname ends with `.medium.com`.  An exact
+sub-domain like `other.weixin.qq.com` does **not** match `mp.weixin.qq.com`.
+
 ## Running tests
 
 ```bash
 uv run pytest tests/ -v
 ```
 
-All 51 tests use mocking — no network calls, no API keys required.
+All 70 tests use mocking — no network calls, no API keys required.
 
 ## Dependencies (auto-installed by `uv run`)
 
