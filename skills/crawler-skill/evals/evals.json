@@ -1,0 +1,12 @@
+{
+  "skill_name": "crawler-skill",
+  "evals": [
+    {
+      "id": 0,
+      "name": "wechat-fallback-test",
+      "prompt": "Use crawler to fetch https://mp.weixin.qq.com/s/TpmrSdx13CqApwN3iZQVew?scene=1&click_id=89 and save the result to reports/wechat_test.md",
+      "expected_output": "A markdown file with the content of the WeChat article about Agent Skill.",
+      "files": []
+    }
+  ]
+}

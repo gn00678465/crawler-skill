@@ -34,6 +34,7 @@ import firecrawl_scraper
 import jina_reader
 import scrapling_scraper
 import crawl
+import domain_router
 
 
 # ---------------------------------------------------------------------------
@@ -569,3 +570,156 @@ class TestContentValidation:
             MockFetcher.get.side_effect = RuntimeError("err")
             result = scrapling_scraper.scrape("https://example.com")
         assert set(result.keys()) >= {"success", "markdown", "metadata", "error"}
+
+
+# ===========================================================================
+# domain_router tests
+# ===========================================================================
+
+class TestDomainRouter:
+    """Unit tests for domain_router.get_tiers()."""
+
+    # --- DEFAULT_TIERS ---
+    def test_default_tiers_constant(self):
+        """DEFAULT_TIERS must be the canonical 3-tier tuple."""
+        assert domain_router.DEFAULT_TIERS == ("firecrawl", "jina", "scrapling")
+
+    # --- Standard URL → all tiers ---
+    def test_unknown_domain_returns_all_tiers(self):
+        """An unrecognised domain gets the full firecrawl → jina → scrapling chain."""
+        tiers = domain_router.get_tiers("https://example.com")
+        assert tiers == ("firecrawl", "jina", "scrapling")
+
+    def test_unknown_domain_with_path_returns_all_tiers(self):
+        """Path and query string must not affect tier selection."""
+        tiers = domain_router.get_tiers("https://docs.python.org/3/library/urllib.parse.html?q=1")
+        assert tiers == ("firecrawl", "jina", "scrapling")
+
+    # --- medium.com ---
+    def test_medium_com_skips_firecrawl(self):
+        """medium.com must skip firecrawl, returning (jina, scrapling)."""
+        tiers = domain_router.get_tiers("https://medium.com/some-article")
+        assert tiers == ("jina", "scrapling")
+
+    def test_medium_com_subdomain_skips_firecrawl(self):
+        """blog.medium.com is a subdomain — must also skip firecrawl."""
+        tiers = domain_router.get_tiers("https://blog.medium.com/article")
+        assert tiers == ("jina", "scrapling")
+
+    def test_medium_com_deep_subdomain_skips_firecrawl(self):
+        """towardsdatascience.com is a separate domain; only exact/suffix match counts."""
+        tiers = domain_router.get_tiers("https://towardsdatascience.com/article")
+        assert tiers == ("firecrawl", "jina", "scrapling")
+
+    def test_medium_com_order_preserved(self):
+        """Remaining tiers must keep the original order (jina before scrapling)."""
+        tiers = domain_router.get_tiers("https://medium.com/")
+        assert list(tiers).index("jina") < list(tiers).index("scrapling")
+
+    # --- mp.weixin.qq.com ---
+    def test_weixin_skips_firecrawl_and_jina(self):
+        """mp.weixin.qq.com must skip both firecrawl and jina, leaving only scrapling."""
+        tiers = domain_router.get_tiers("https://mp.weixin.qq.com/s/abc123")
+        assert tiers == ("scrapling",)
+
+    def test_weixin_subdomain_of_qq_not_matched(self):
+        """qq.com itself is not in the rules — must return all tiers."""
+        tiers = domain_router.get_tiers("https://qq.com/page")
+        assert tiers == ("firecrawl", "jina", "scrapling")
+
+    def test_weixin_other_subdomain_not_matched(self):
+        """other.weixin.qq.com is NOT mp.weixin.qq.com — must return all tiers."""
+        tiers = domain_router.get_tiers("https://other.weixin.qq.com/page")
+        assert tiers == ("firecrawl", "jina", "scrapling")
+
+    # --- Return type ---
+    def test_get_tiers_returns_tuple(self):
+        """get_tiers() must always return a tuple, never a list or set."""
+        result = domain_router.get_tiers("https://example.com")
+        assert isinstance(result, tuple)
+
+    def test_get_tiers_never_empty(self):
+        """Even the most restrictive rule must leave at least one tier (scrapling)."""
+        tiers = domain_router.get_tiers("https://mp.weixin.qq.com/s/test")
+        assert len(tiers) >= 1
+
+    # --- DOMAIN_RULES structure ---
+    def test_domain_rules_values_are_frozensets(self):
+        """All values in DOMAIN_RULES must be frozenset for immutability."""
+        for key, value in domain_router.DOMAIN_RULES.items():
+            assert isinstance(value, frozenset), f"Rule for {key!r} is not a frozenset"
+
+
+# ===========================================================================
+# crawl.py domain-routing integration tests
+# ===========================================================================
+
+class TestCrawlDomainRouting:
+    """Integration tests verifying crawl() dispatches according to domain rules."""
+
+    def _make_success(self, label: str) -> dict:
+        return {
+            "success": True,
+            "markdown": f"# From {label}\n\n" + _long_str(),
+            "metadata": {},
+            "error": None,
+        }
+
+    def _make_failure(self, error: str = "failed") -> dict:
+        return {"success": False, "markdown": "", "metadata": {}, "error": error}
+
+    def test_medium_com_skips_firecrawl_tries_jina_first(self):
+        """For medium.com, crawl() must NOT call firecrawl and must call jina first."""
+        jina_result = self._make_success("Jina")
+        with patch("crawl.firecrawl_scraper.scrape") as mock_fc, \
+             patch("crawl.jina_reader.fetch", return_value=jina_result) as mock_jina, \
+             patch("crawl.scrapling_scraper.scrape") as mock_scraping:
+            success, markdown = crawl.crawl("https://medium.com/article")
+        assert success is True
+        mock_fc.assert_not_called()
+        mock_jina.assert_called_once_with("https://medium.com/article")
+        mock_scraping.assert_not_called()
+
+    def test_medium_com_subdomain_skips_firecrawl(self):
+        """blog.medium.com must also skip firecrawl."""
+        jina_result = self._make_success("Jina")
+        with patch("crawl.firecrawl_scraper.scrape") as mock_fc, \
+             patch("crawl.jina_reader.fetch", return_value=jina_result), \
+             patch("crawl.scrapling_scraper.scrape"):
+            crawl.crawl("https://blog.medium.com/post")
+        mock_fc.assert_not_called()
+
+    def test_medium_com_jina_fails_falls_back_to_scrapling(self):
+        """medium.com: if jina fails, scrapling is the final fallback."""
+        scrapling_result = self._make_success("Scrapling")
+        with patch("crawl.firecrawl_scraper.scrape") as mock_fc, \
+             patch("crawl.jina_reader.fetch", return_value=self._make_failure()), \
+             patch("crawl.scrapling_scraper.scrape", return_value=scrapling_result) as mock_scraping:
+            success, markdown = crawl.crawl("https://medium.com/article")
+        assert success is True
+        assert "Scrapling" in markdown
+        mock_fc.assert_not_called()
+        mock_scraping.assert_called_once_with("https://medium.com/article")
+
+    def test_weixin_only_uses_scrapling(self):
+        """mp.weixin.qq.com must call ONLY scrapling (skip firecrawl and jina)."""
+        scrapling_result = self._make_success("Scrapling")
+        with patch("crawl.firecrawl_scraper.scrape") as mock_fc, \
+             patch("crawl.jina_reader.fetch") as mock_jina, \
+             patch("crawl.scrapling_scraper.scrape", return_value=scrapling_result) as mock_scraping:
+            success, markdown = crawl.crawl("https://mp.weixin.qq.com/s/abc")
+        assert success is True
+        mock_fc.assert_not_called()
+        mock_jina.assert_not_called()
+        mock_scraping.assert_called_once_with("https://mp.weixin.qq.com/s/abc")
+
+    def test_weixin_scrapling_fails_returns_false(self):
+        """mp.weixin.qq.com: if scrapling fails, crawl returns (False, '')."""
+        with patch("crawl.firecrawl_scraper.scrape") as mock_fc, \
+             patch("crawl.jina_reader.fetch") as mock_jina, \
+             patch("crawl.scrapling_scraper.scrape", return_value=self._make_failure()):
+            success, markdown = crawl.crawl("https://mp.weixin.qq.com/s/abc")
+        assert success is False
+        assert markdown == ""
+        mock_fc.assert_not_called()
+        mock_jina.assert_not_called()

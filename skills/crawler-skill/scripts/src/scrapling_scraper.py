@@ -2,6 +2,11 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #     "scrapling>=0.2",
+#     "curl_cffi>=0.7.0",
+#     "playwright>=1.41.0",
+#     "patchright>=1.41.0",
+#     "browserforge>=1.1.0",
+#     "msgspec>=0.18.0",
 #     "html2text>=2024.2.26",
 # ]
 # ///
@@ -147,7 +152,24 @@ def scrape(url: str) -> dict:
 if __name__ == "__main__":
     import sys
     import json
+    import argparse
+    from pathlib import Path
 
-    target = sys.argv[1] if len(sys.argv) > 1 else "https://example.com"
-    output = scrape(target)
-    print(json.dumps(output, indent=2, ensure_ascii=False))
+    parser = argparse.ArgumentParser(description="Scrapling scraper module.")
+    parser.add_argument("url", help="The URL to scrape.")
+    parser.add_argument("--output", help="Optional path to save the markdown output.")
+    
+    args = parser.parse_args()
+    output = scrape(args.url)
+    
+    if output["success"] and args.output:
+        report_path = Path(args.output).resolve()
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        with report_path.open("w", encoding="utf-8") as f:
+            f.write(output["markdown"])
+        print(f"Markdown saved to {report_path}", file=sys.stderr)
+    
+    # Always print JSON to stdout for programmatic use
+    sys.stdout.buffer.write(
+        json.dumps(output, indent=2, ensure_ascii=False).encode("utf-8") + b"\n"
+    )
