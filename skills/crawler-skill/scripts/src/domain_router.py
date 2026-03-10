@@ -41,11 +41,15 @@ def get_tiers(url: str) -> tuple[str, ...]:
     Returns
     -------
     tuple[str, ...]
-        A non-empty tuple of tier names drawn from ``DEFAULT_TIERS``.
+        Ordered tuple of tier names drawn from ``DEFAULT_TIERS``.  If all
+        tiers are skipped by domain rules, the last tier in ``DEFAULT_TIERS``
+        is used as a fallback.  Returns an empty tuple only if
+        ``DEFAULT_TIERS`` itself is empty.
     """
     hostname = urlparse(url).hostname or ""
     skip: frozenset[str] = _match_rules(hostname)
-    return tuple(tier for tier in DEFAULT_TIERS if tier not in skip)
+    result = tuple(tier for tier in DEFAULT_TIERS if tier not in skip)
+    return result if result else DEFAULT_TIERS[-1:]
 
 
 # ---------------------------------------------------------------------------

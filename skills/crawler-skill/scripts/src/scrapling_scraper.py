@@ -170,4 +170,6 @@ if __name__ == "__main__":
         print(f"Markdown saved to {report_path}", file=sys.stderr)
     
     # Always print JSON to stdout for programmatic use
-    sys.stdout.buffer.write(json.dumps(output, indent=2, ensure_ascii=False).encode("utf-8"))
+    sys.stdout.buffer.write(
+        json.dumps(output, indent=2, ensure_ascii=False).encode("utf-8") + b"\n"
+    )
