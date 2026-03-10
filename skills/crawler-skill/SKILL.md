@@ -59,8 +59,14 @@ uv run scripts/crawl.py --url https://docs.python.org/3/ --output reports/python
 uv run scripts/crawl.py --url https://example.com
 
 # With a Firecrawl API key for best results
-FIRECRAWL_API_KEY=fc-... uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com --output reports/example.md
+FIRECRAWL_API_KEY=fc-... uv run scripts/crawl.py --url https://example.com --output reports/example.md
 ```
+
+## URL requirements
+
+Only `http://` and `https://` URLs are accepted. Passing any other scheme
+(`ftp://`, `file://`, `javascript:`, a bare path, etc.) exits with code `1`
+and prints a clear error — no scraping is attempted.
 
 ## Saving Reports
 
@@ -70,9 +76,10 @@ Example:
 If asked to "save to result.md", you should run:
 `uv run scripts/crawl.py --url <URL> --output reports/result.md`
 
-# Point at a self-hosted Firecrawl instance
+## Point at a self-hosted Firecrawl instance
+
 ```bash
-FIRECRAWL_API_URL=http://localhost:3002 uv --directory skills/crawler-skill run scripts/crawl.py --url https://example.com
+FIRECRAWL_API_URL=http://localhost:3002 uv run scripts/crawl.py --url https://example.com
 ```
 
 ## Content validation
