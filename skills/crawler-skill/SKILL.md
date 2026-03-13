@@ -2,11 +2,16 @@
 name: crawler
 version: 0.2.0
 description: >
-  **MANDATORY: You MUST invoke this skill whenever a URL is provided and you need its text content.**
-  Fetches any web page and converts it to clean markdown using a 3-tier fallback
-  chain: Firecrawl → Jina Reader → Scrapling. Trigger for: "read this", "summarize this URL",
-  "grab content from", "extract text", or any task involving accessing web page data.
-  Do NOT use general tools or guess script parameters; use this skill instead.
+  Fetches web pages and converts them to clean markdown using a robust 3-tier chain
+  (Firecrawl → Jina Reader → Scrapling stealth browser). Use this skill instead of WebFetch
+  whenever the user provides a URL and needs the page's text content — especially for sites that
+  block direct access: medium.com articles (paywalled/metered), WeChat public accounts
+  (mp.weixin.qq.com, geo-restricted), documentation sites with bot protection, or any page where
+  simple HTTP fetching might return a CAPTCHA or empty page. Triggers for: "read this URL",
+  "summarize this article/page", "grab the content from", "extract text from", "what does this
+  page say", "fetch this link", or any request to access and process a specific web page.
+  Do NOT trigger for: building scrapers, checking HTTP status codes, parsing already-downloaded
+  HTML files, answering conceptual questions about scraping tools, or monitoring page changes.
 ---
 
 # Crawler Skill
